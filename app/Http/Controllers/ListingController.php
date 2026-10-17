@@ -26,6 +26,10 @@ class ListingController extends Controller
             $query->where('property_type', $request->string('property_type'));
         }
 
+        if ($request->filled('min_price')) {
+            $query->where('price', '>=', $request->integer('min_price'));
+        }
+
         if ($request->filled('max_price')) {
             $query->where('price', '<=', $request->integer('max_price'));
         }
@@ -53,7 +57,7 @@ class ListingController extends Controller
             'listings' => ListingResource::collection($listings),
             'branches' => BranchResource::collection(Branch::query()->orderBy('name')->get()),
             'propertyTypes' => PropertyType::options(),
-            'filters' => $request->only('property_type', 'max_price', 'min_bedrooms', 'region'),
+            'filters' => $request->only('property_type', 'min_price', 'max_price', 'min_bedrooms', 'region'),
         ]);
     }
 

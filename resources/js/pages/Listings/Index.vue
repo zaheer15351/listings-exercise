@@ -21,6 +21,7 @@ const form = ref({
     property_type: props.filters.property_type ?? '',
     region: props.filters.region ?? '',
     min_bedrooms: props.filters.min_bedrooms ?? '',
+    min_price: props.filters.min_price ?? '',
     max_price: props.filters.max_price ?? '',
 });
 
@@ -42,7 +43,7 @@ function search() {
 }
 
 function reset() {
-    form.value = { property_type: '', region: '', min_bedrooms: '', max_price: '' };
+    form.value = { property_type: '', region: '', min_bedrooms: '', min_price: '', max_price: '' };
     search();
 }
 </script>
