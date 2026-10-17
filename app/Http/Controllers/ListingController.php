@@ -19,7 +19,8 @@ class ListingController extends Controller
      */
     public function index(ListingIndexRequest $request): Response
     {
-        $query = Listing::query()->live();
+        // ListingResource renders each listing's branch, so load them in one query.
+        $query = Listing::query()->with('branch')->live();
 
         if ($request->filled('property_type')) {
             $query->where('property_type', $request->string('property_type'));
