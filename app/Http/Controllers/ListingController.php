@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\AlertFrequency;
 use App\Enums\ListingStatus;
 use App\Enums\PropertyType;
 use App\Http\Requests\ListingIndexRequest;
@@ -57,6 +58,7 @@ class ListingController extends Controller
             'listings' => ListingResource::collection($listings),
             'branches' => BranchResource::collection(Branch::query()->orderBy('name')->get()),
             'propertyTypes' => PropertyType::options(),
+            'alertFrequencies' => AlertFrequency::options(),
             'filters' => $request->only('property_type', 'min_price', 'max_price', 'min_bedrooms', 'region'),
         ]);
     }
