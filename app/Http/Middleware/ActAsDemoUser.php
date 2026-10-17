@@ -5,6 +5,7 @@ namespace App\Http\Middleware;
 use App\Models\User;
 use Closure;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
@@ -17,25 +18,23 @@ use Symfony\Component\HttpFoundation\Response;
  */
 class ActAsDemoUser
 {
-    private ?User $demoUser = null;
-
-    private bool $resolved = false;
-
     public function handle(Request $request, Closure $next): Response
     {
-        // Resolved lazily and only once per request — repeated auth()->user()
-        // calls should not each hit the database.
+        // The user is set on the guard rather than only on the request, so
+        // auth()->user(), Auth::id() and the Gate see the demo user as well as
+        // $request->user(). Setting a request user resolver alone is invisible
+        // to the guard, which only reads the session.
         //
-        // This is null until the database is seeded (`php artisan migrate --seed`),
-        // which is the same shape as a genuinely unauthenticated request.
-        $request->setUserResolver(function (): ?User {
-            if (! $this->resolved) {
-                $this->demoUser = User::query()->orderBy('id')->first();
-                $this->resolved = true;
-            }
+        // This is one query per request. HandleInertiaRequests already resolves
+        // the user on every page to share it, so resolving it lazily saved nothing.
+        //
+        // An unseeded database has no user, which is the same shape as a
+        // genuinely unauthenticated request (`php artisan migrate --seed` first).
+        $demoUser = User::query()->orderBy('id')->first();
 
-            return $this->demoUser;
-        });
+        if ($demoUser !== null) {
+            Auth::setUser($demoUser);
+        }
 
         return $next($request);
     }
