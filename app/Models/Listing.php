@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Enums\ListingStatus;
 use App\Enums\PropertyType;
+use App\Events\ListingWentLive;
 use Database\Factories\ListingFactory;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -71,6 +72,28 @@ class Listing extends Model
     public function branch(): BelongsTo
     {
         return $this->belongsTo(Branch::class);
+    }
+
+    /**
+     * Put the listing on the market and announce it.
+     *
+     * The one place a listing becomes live, so the one place that raises
+     * alerts. A listing created or bulk-updated straight into live (seeders,
+     * imports, raw queries) announces nothing, and publishing a listing that is
+     * already live does nothing. A re-listed property keeps its original
+     * listing date; a draft gets today's.
+     */
+    public function publish(): void
+    {
+        if ($this->status === ListingStatus::Live) {
+            return;
+        }
+
+        $this->status = ListingStatus::Live;
+        $this->listed_at ??= now();
+        $this->save();
+
+        ListingWentLive::dispatch($this);
     }
 
     /**
