@@ -6,6 +6,7 @@ use App\Enums\PropertyType;
 use App\Models\Branch;
 use App\Models\Listing;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Inertia\Testing\AssertableInertia;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
@@ -48,6 +49,21 @@ class ListingPageTest extends TestCase
         $this->get('/?max_price=300000&per_page=100')
             ->assertOk()
             ->assertInertia(fn (AssertableInertia $page) => $page->has('listings.data', 1));
+    }
+
+    public function test_index_filters_by_min_price_inclusively(): void
+    {
+        Listing::factory()->live()->create(['price' => 199_999]);
+        Listing::factory()->live()->create(['price' => 200_000]);
+        Listing::factory()->live()->create(['price' => 500_000]);
+
+        $this->get('/?min_price=200000&max_price=300000&per_page=100')
+            ->assertOk()
+            ->assertInertia(fn (AssertableInertia $page) => $page
+                ->has('listings.data', 1)
+                ->where('listings.data.0.price', 200_000)
+                ->where('filters.min_price', '200000')
+            );
     }
 
     public function test_index_filters_by_region(): void
@@ -121,6 +137,27 @@ class ListingPageTest extends TestCase
 
         $this->assertSame([], array_intersect($first, $second), 'Pages must not overlap.');
         $this->assertCount(6, array_unique([...$first, ...$second]));
+    }
+
+    /**
+     * Each card renders its branch. Loading it per row made the query count grow
+     * with the page size.
+     */
+    public function test_index_query_count_does_not_grow_with_the_page(): void
+    {
+        $queriesFor = function (int $listings): int {
+            Listing::query()->delete();
+            Listing::factory($listings)->live()->create();
+
+            DB::flushQueryLog();
+            DB::enableQueryLog();
+            $this->get('/?per_page=100')->assertOk();
+            DB::disableQueryLog();
+
+            return count(DB::getQueryLog());
+        };
+
+        $this->assertSame($queriesFor(2), $queriesFor(8));
     }
 
     public function test_show_renders_a_single_listing(): void

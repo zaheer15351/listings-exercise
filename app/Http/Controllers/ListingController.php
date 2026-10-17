@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\AlertFrequency;
 use App\Enums\ListingStatus;
 use App\Enums\PropertyType;
 use App\Http\Requests\ListingIndexRequest;
@@ -19,10 +20,15 @@ class ListingController extends Controller
      */
     public function index(ListingIndexRequest $request): Response
     {
-        $query = Listing::query()->live();
+        // ListingResource renders each listing's branch, so load them in one query.
+        $query = Listing::query()->with('branch')->live();
 
         if ($request->filled('property_type')) {
             $query->where('property_type', $request->string('property_type'));
+        }
+
+        if ($request->filled('min_price')) {
+            $query->where('price', '>=', $request->integer('min_price'));
         }
 
         if ($request->filled('max_price')) {
@@ -52,7 +58,8 @@ class ListingController extends Controller
             'listings' => ListingResource::collection($listings),
             'branches' => BranchResource::collection(Branch::query()->orderBy('name')->get()),
             'propertyTypes' => PropertyType::options(),
-            'filters' => $request->only('property_type', 'max_price', 'min_bedrooms', 'region'),
+            'alertFrequencies' => AlertFrequency::options(),
+            'filters' => $request->only('property_type', 'min_price', 'max_price', 'min_bedrooms', 'region'),
         ]);
     }
 

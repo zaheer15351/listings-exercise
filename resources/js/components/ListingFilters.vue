@@ -75,6 +75,20 @@ const fieldClasses =
         </div>
 
         <div class="flex flex-col gap-1">
+            <label for="min_price" class="text-xs font-medium text-slate-600">Min price (£)</label>
+            <input
+                id="min_price"
+                :value="modelValue.min_price"
+                type="number"
+                min="0"
+                step="10000"
+                placeholder="Any"
+                :class="[fieldClasses, 'w-36']"
+                @input="update('min_price', $event.target.value)"
+            />
+        </div>
+
+        <div class="flex flex-col gap-1">
             <label for="max_price" class="text-xs font-medium text-slate-600">Max price (£)</label>
             <input
                 id="max_price"

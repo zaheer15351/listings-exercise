@@ -20,6 +20,7 @@ class ListingIndexRequest extends FormRequest
     {
         return [
             'property_type' => ['nullable', new Enum(PropertyType::class)],
+            'min_price' => ['nullable', 'integer', 'min:0'],
             'max_price' => ['nullable', 'integer', 'min:0'],
             'min_bedrooms' => ['nullable', 'integer', 'min:0', 'max:20'],
             'region' => ['nullable', 'string', 'max:100'],

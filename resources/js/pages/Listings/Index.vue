@@ -5,12 +5,14 @@ import AppLayout from '../../components/AppLayout.vue';
 import ListingCard from '../../components/ListingCard.vue';
 import ListingFilters from '../../components/ListingFilters.vue';
 import Pagination from '../../components/Pagination.vue';
+import SaveSearchPanel from '../../components/SaveSearchPanel.vue';
 
 const props = defineProps({
     listings: { type: Object, required: true },
     branches: { type: Array, required: true },
     propertyTypes: { type: Array, required: true },
     filters: { type: Object, required: true },
+    alertFrequencies: { type: Array, required: true },
 });
 
 const processing = ref(false);
@@ -21,6 +23,7 @@ const form = ref({
     property_type: props.filters.property_type ?? '',
     region: props.filters.region ?? '',
     min_bedrooms: props.filters.min_bedrooms ?? '',
+    min_price: props.filters.min_price ?? '',
     max_price: props.filters.max_price ?? '',
 });
 
@@ -42,7 +45,7 @@ function search() {
 }
 
 function reset() {
-    form.value = { property_type: '', region: '', min_bedrooms: '', max_price: '' };
+    form.value = { property_type: '', region: '', min_bedrooms: '', min_price: '', max_price: '' };
     search();
 }
 </script>
@@ -59,6 +62,8 @@ function reset() {
             @submit="search"
             @reset="reset"
         />
+
+        <SaveSearchPanel :filters="filters" :frequencies="alertFrequencies" />
 
         <p class="mb-4 text-sm text-slate-500" aria-live="polite">
             <span v-if="processing">Loading…</span>
