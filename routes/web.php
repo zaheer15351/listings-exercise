@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\AlertController;
 use App\Http\Controllers\ListingController;
 use App\Http\Controllers\SavedSearchController;
 use Illuminate\Support\Facades\Route;
@@ -12,3 +13,5 @@ Route::post('/saved-searches', [SavedSearchController::class, 'store'])->name('s
 Route::delete('/saved-searches/{savedSearch}', [SavedSearchController::class, 'destroy'])
     ->whereNumber('savedSearch')
     ->name('saved-searches.destroy');
+
+Route::get('/alerts', [AlertController::class, 'index'])->name('alerts.index');

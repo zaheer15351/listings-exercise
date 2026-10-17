@@ -11,6 +11,7 @@ const page = usePage();
 const nav = [
     { href: '/', label: 'Listings', component: 'Listings/' },
     { href: '/saved-searches', label: 'Saved searches', component: 'SavedSearches/' },
+    { href: '/alerts', label: 'Alerts', component: 'Alerts/' },
 ];
 </script>
 

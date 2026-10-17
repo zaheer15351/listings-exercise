@@ -59,7 +59,7 @@ class AlertNotification extends Notification
         }
 
         return $message
-            ->action('Manage your saved searches', route('saved-searches.index'))
+            ->action('See all your alerts', route('alerts.index'))
             ->line($this->why());
     }
 
@@ -77,6 +77,6 @@ class AlertNotification extends Notification
 
     private function why(): string
     {
-        return 'You are getting this because of your saved searches. Delete a search to stop its emails.';
+        return 'You are getting this because of your saved searches. Delete a search to stop its emails: '.route('saved-searches.index');
     }
 }
