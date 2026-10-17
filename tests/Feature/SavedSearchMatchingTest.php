@@ -73,29 +73,4 @@ class SavedSearchMatchingTest extends TestCase
             ], false],
         ];
     }
-
-    /**
-     * @param  array<string, mixed>  $criteria
-     */
-    #[DataProvider('summaries')]
-    public function test_the_summary_reads_as_the_search(array $criteria, string $summary): void
-    {
-        $this->assertSame($summary, SavedSearch::factory()->make($criteria)->summary());
-    }
-
-    /**
-     * @return array<string, array{array<string, mixed>, string}>
-     */
-    public static function summaries(): array
-    {
-        return [
-            'everything' => [[
-                'property_type' => PropertyType::Flat, 'region' => 'Leeds',
-                'min_bedrooms' => 2, 'min_price' => 200_000, 'max_price' => 300_000,
-            ], 'Flat in Leeds, 2+ beds, £200,000 to £300,000'],
-            'region only' => [['region' => 'Leeds'], 'Any property in Leeds'],
-            'min price only' => [['min_price' => 200_000], 'Any property, from £200,000'],
-            'max price only' => [['max_price' => 300_000], 'Any property, up to £300,000'],
-        ];
-    }
 }

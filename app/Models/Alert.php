@@ -80,4 +80,15 @@ class Alert extends Model
     {
         $query->whereNull('sent_at');
     }
+
+    /**
+     * Unsent alerts still worth sending: a listing that left the market before
+     * the email went out is not news.
+     *
+     * @param  Builder<Alert>  $query
+     */
+    public function scopeDeliverable(Builder $query): void
+    {
+        $query->unsent()->whereIn('listing_id', Listing::query()->live()->select('id'));
+    }
 }

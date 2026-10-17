@@ -3,7 +3,6 @@
 namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
-use App\Notifications\AlertNotification;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
@@ -54,24 +53,5 @@ class User extends Authenticatable
     public function alerts(): HasMany
     {
         return $this->hasMany(Alert::class);
-    }
-
-    /**
-     * Email the given alerts as one message and mark them sent. The single
-     * place an alert is delivered, used by instant searches and the digest.
-     *
-     * @param  Collection<int, Alert>  $alerts
-     */
-    public function sendAlerts(Collection $alerts): void
-    {
-        if ($alerts->isEmpty()) {
-            return;
-        }
-
-        $alerts->loadMissing(['listing.branch', 'savedSearch']);
-
-        $this->notify(new AlertNotification($alerts));
-
-        Alert::query()->whereKey($alerts->modelKeys())->update(['sent_at' => now()]);
     }
 }
