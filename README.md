@@ -36,32 +36,39 @@ Then open <http://127.0.0.1:8000>.
 php artisan test              # PHPUnit feature/unit tests
 vendor/bin/pint --test        # Code style (Laravel Pint)
 vendor/bin/phpstan analyse    # Static analysis (Larastan, level 5)
+npm run build                 # Compiles the Vue pages - no PHP test does
 ```
 
-All three run in CI (`.github/workflows/ci.yml`) on push and pull request, and all pass on a fresh clone.
+All four run in CI (`.github/workflows/ci.yml`) on push and pull request, and all pass on a fresh clone. If PHPStan crashes on memory locally (Herd's CLI PHP defaults to 128M), add `--memory-limit=1G`.
 
 ## How it's laid out
 
 ```
 app/
-  Enums/                 PropertyType, ListingStatus
+  Actions/               SendAlerts (emails alerts, used by instant and digest)
+  Console/Commands/      PublishListing, SendAlertDigests
+  Enums/                 PropertyType, ListingStatus, AlertFrequency
+  Events/                ListingWentLive
+  Listeners/             CreateAlertsForListing
   Http/
-    Controllers/         ListingController
-    Requests/            ListingIndexRequest (filter validation)
-    Resources/           ListingResource, BranchResource
+    Controllers/         ListingController, SavedSearchController, AlertController
+    Requests/            ListingIndexRequest (filter validation), StoreSavedSearchRequest
+    Resources/           ListingResource, BranchResource, SavedSearchResource, AlertResource
     Middleware/          ActAsDemoUser (auth stub — see below)
                          HandleInertiaRequests (shared props)
-  Models/                Branch, Listing
+  Models/                Branch, Listing, SavedSearch, Alert
+  Notifications/         AlertNotification (the alert email)
 database/
-  factories/             BranchFactory, ListingFactory (with states)
-  migrations/            branches, listings
+  factories/             Branch, Listing (with states), SavedSearch, Alert
+  migrations/            branches, listings, saved_searches, alerts
   seeders/               DatabaseSeeder
 resources/js/
-  pages/Listings/        Index.vue, Show.vue
-  components/            AppLayout, ListingCard, ListingFilters, Pagination
+  pages/                 Listings/Index, Listings/Show, SavedSearches/Index, Alerts/Index
+  components/            AppLayout, ListingCard, ListingFilters, Pagination, SaveSearchPanel
   app.js                 Inertia entry point
-routes/                  web.php
-tests/Feature/           ListingPageTest, ListingTest
+routes/                  web.php, console.php (digest schedule)
+tests/Feature/           one file per behaviour; see the alert and saved-search tests
+tests/Unit/              SavedSearchSummaryTest (pure formatting, no database)
 ```
 
 ### The domain
@@ -75,8 +82,12 @@ Laravel + **Inertia** + Vue 3 + Tailwind — the same shape as our internal apps
 
 | Method | Path                 | Page              | Notes                                                      |
 | ------ | -------------------- | ----------------- | ---------------------------------------------------------- |
-| GET    | `/`                  | `Listings/Index`  | Live listings, paginated. Filters: `property_type`, `max_price`, `min_bedrooms`, `region`, `per_page`. |
+| GET    | `/`                  | `Listings/Index`  | Live listings, paginated. Filters: `property_type`, `min_price`, `max_price`, `min_bedrooms`, `region`, `per_page`. |
 | GET    | `/listings/{listing}`| `Listings/Show`   | A single live listing. Non-live listings 404.              |
+| GET    | `/saved-searches`    | `SavedSearches/Index` | The user's saved searches.                             |
+| POST   | `/saved-searches`    | -                 | Save a search (from the listings page).                    |
+| DELETE | `/saved-searches/{id}` | -               | Delete one of the user's searches.                         |
+| GET    | `/alerts`            | `Alerts/Index`    | The user's alerts, newest first.                           |
 
 Filters live in the query string, so a search is shareable, bookmarkable and survives the back button. `pages/Listings/Index.vue` seeds its form from the `filters` prop and re-issues a `router.get` on submit.
 
@@ -84,7 +95,27 @@ Filters live in the query string, so a search is shareable, bookmarkable and sur
 
 Auth is **stubbed**. A real deployment would authenticate requests properly; to keep this exercise focused on the feature rather than on auth plumbing, every request is resolved as the seeded demo user (`demo@street.example`) via `App\Http\Middleware\ActAsDemoUser`, and shared to the front end as the `auth.user` prop. Build any user-scoped work against `$request->user()` / `auth()->user()` as you normally would — it will return the demo user.
 
-Note the resolver returns `null` until the database is seeded, so run `php artisan migrate --seed` before you start.
+Note there is no user until the database is seeded, so run `php artisan migrate --seed` before you start.
+
+## Saved-search alerts
+
+A buyer saves the search they are looking at and gets an email when a new listing matching it goes live. Mail goes to the log (`MAIL_MAILER=log`), so emails appear in `storage/logs/laravel.log`. Decisions and trade-offs are in [`NOTES.md`](NOTES.md).
+
+### Try it
+
+1. Open <http://127.0.0.1:8000>, filter (e.g. an area and a max price), choose **Email me: As soon as it is listed** and **Save this search**.
+2. List the drafts and put a matching one live - this stands in for the admin screen that would publish a listing:
+   ```bash
+   php artisan listings:publish        # lists drafts with price, beds, type and region
+   php artisan listings:publish <id>   # puts that draft live and raises alerts
+   ```
+3. Open **Alerts** to see it, and `storage/logs/laravel.log` for the email.
+4. Searches saved as **Daily digest** wait for the digest, scheduled daily. Nothing runs the scheduler here, so send it by hand:
+   ```bash
+   php artisan alerts:send-digests
+   ```
+
+Links in emails use `APP_URL`, so set it to the address you serve the app on.
 
 ---
 
